@@ -228,6 +228,26 @@
     }
   </style>
 
+
+  <style id="meal-add-button-v1">
+    .meal-add-button{
+      width:100%;
+      margin-top:12px;
+      border:0;
+      border-radius:16px;
+      background:#e3f6e9;
+      color:#287d45;
+      padding:13px 16px;
+      font-weight:900;
+      font-size:15px;
+      text-align:center;
+      box-shadow:0 4px 12px rgba(66,173,104,.08);
+    }
+    .meal-add-button:active{
+      transform:translateY(1px);
+    }
+  </style>
+
 </head>
 <body>
   <main class="app-shell">
@@ -254,9 +274,9 @@
       <section class="card">
         <div class="section-head">
           <h2>🍽️ 食事</h2>
-          <button class="mini-button" type="button" onclick="addMeal()">＋ 食事を追加</button>
         </div>
         <div id="mealList"></div>
+        <button class="meal-add-button" type="button" onclick="addMeal()">＋ 食事を追加</button>
       </section>
 
       <section class="card">
