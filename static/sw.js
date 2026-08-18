@@ -1,4 +1,4 @@
-const CACHE = "aquadiet-browser-fix-v1";
+const CACHE = "aquadiet-standalone-v3";
 
 const ASSETS = [
   "/static/style.css",
@@ -7,7 +7,9 @@ const ASSETS = [
 
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE).then(cache => {
+      return cache.addAll(ASSETS);
+    })
   );
 
   self.skipWaiting();
@@ -28,16 +30,33 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
-  if (event.request.method !== "GET") return;
+  // API通信やPOSTはキャッシュしない
+  if (
+    event.request.method !== "GET" ||
+    event.request.url.includes("/api/")
+  ) {
+    return;
+  }
 
+  // HTMLは常にネットワーク優先
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match("/"))
+    );
+    return;
+  }
+
+  // CSS・画像などはネットワーク優先 → 失敗時キャッシュ
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        const responseClone = response.clone();
+        if (response && response.ok) {
+          const clone = response.clone();
 
-        caches.open(CACHE).then(cache => {
-          cache.put(event.request, responseClone);
-        });
+          caches.open(CACHE).then(cache => {
+            cache.put(event.request, clone);
+          });
+        }
 
         return response;
       })
