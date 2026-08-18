@@ -30,7 +30,6 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
-  // API通信やPOSTはキャッシュしない
   if (
     event.request.method !== "GET" ||
     event.request.url.includes("/api/")
@@ -38,7 +37,6 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // HTMLは常にネットワーク優先
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request).catch(() => caches.match("/"))
@@ -46,18 +44,15 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // CSS・画像などはネットワーク優先 → 失敗時キャッシュ
   event.respondWith(
     fetch(event.request)
       .then(response => {
         if (response && response.ok) {
           const clone = response.clone();
-
           caches.open(CACHE).then(cache => {
             cache.put(event.request, clone);
           });
         }
-
         return response;
       })
       .catch(() => caches.match(event.request))
