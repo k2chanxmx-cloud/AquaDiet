@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#8dd8f8">
   <title>Aqua Log</title>
   <link rel="manifest" href="/static/manifest.json">
-  <link rel="stylesheet" href="/static/style.css?v=1.4">
+  <link rel="stylesheet" href="/static/style.css?v=1.5">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -81,12 +81,13 @@
       <button id="saveButton" class="primary-button" onclick="saveDayAndComment()">記録を保存</button>
 
       <section class="coach-card">
-        <div class="speech-wrap">
-          <div id="aiComment" class="speech-bubble">記録したら、今日の様子を見てコメントする。</div>
-        </div>
+        <h2 class="coach-title">🌟あきおちゃんからのコメント🌟</h2>
+
         <div class="character-wrap">
-          <img src="/static/character.webp" alt="" class="character-silhouette">
+          <img src="/static/character.webp" alt="あきおちゃん" class="character-silhouette">
         </div>
+
+        <div id="aiComment" class="ai-comment-text">記録したら、今日の様子を見てコメントする。</div>
       </section>
     </section>
 
