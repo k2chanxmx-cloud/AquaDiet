@@ -7,8 +7,22 @@
   <meta name="theme-color" content="#8dd8f8">
   <title>Aqua Log</title>
   <link rel="manifest" href="/static/manifest.json">
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=1.4">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    .bottom-nav{
+      display:grid !important;
+      grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    }
+    .bottom-nav .nav-btn{
+      width:100% !important;
+      min-width:0 !important;
+      justify-self:stretch !important;
+      text-align:center !important;
+    }
+  </style>
+
 </head>
 <body>
   <main class="app-shell">
