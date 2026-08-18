@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#8dd8f8">
   <title>Aqua Log</title>
   <link rel="manifest" href="/static/manifest.json">
-  <link rel="stylesheet" href="/static/style.css?v=2.4">
+  <link rel="stylesheet" href="/static/style.css?v=2.5">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -251,6 +251,7 @@
 </head>
 <body>
   <main class="app-shell">
+    <span id="buildMarker" style="display:none">AquaDiet-index-v2.5</span>
     <header class="topbar">
       <div>
         <div class="eyebrow">AQUADIET</div>
@@ -549,9 +550,9 @@ async function loadGraph() {
 }
 
 function openDate(d) {
-  document.getElementById("datePicker").value = d;
-  switchTab("todayTab");
-  loadDay();
+  // iPhone Safari/PWA対策:
+  // 過去日のフォームをその場で差し替えず、ページを再読み込みする。
+  window.location.href = "/?date=" + encodeURIComponent(d);
 }
 
 function switchTab(tabId) {
@@ -566,10 +567,6 @@ document.querySelectorAll(".nav-btn").forEach(btn => btn.addEventListener("click
 document.getElementById("datePicker").addEventListener("change", function() {
   const selectedDate = this.value;
   if (!selectedDate) return;
-
-  // iPhone Safari / PWA対策:
-  // 日付変更後にDOMをその場で再生成すると、textareaのソフトキーボードが
-  // 起動しなくなることがあるため、日付をURLに渡してページごと再読み込みする。
   window.location.href = "/?date=" + encodeURIComponent(selectedDate);
 });
 document.getElementById("sorenessInput").addEventListener("keydown", e => {
