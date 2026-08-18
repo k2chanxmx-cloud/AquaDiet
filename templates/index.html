@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#8dd8f8">
   <title>Aqua Log</title>
   <link rel="manifest" href="/static/manifest.json">
-  <link rel="stylesheet" href="/static/style.css?v=2.0">
+  <link rel="stylesheet" href="/static/style.css?v=2.1">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -181,6 +181,49 @@
         width:calc(100% - 24px) !important;
         margin:0 12px 12px !important;
         padding:16px !important;
+      }
+    }
+  </style>
+
+
+  <style id="coach-mobile-ultratight-v21">
+    @media(max-width:480px){
+      .coach-card .coach-visual{
+        padding:10px 12px 0 !important;
+        min-height:0 !important;
+        height:auto !important;
+        justify-content:flex-start !important;
+      }
+
+      .coach-card .coach-title{
+        margin:0 0 -14px !important;
+        padding:0 !important;
+        font-size:15px !important;
+        line-height:1.2 !important;
+        position:relative !important;
+        z-index:3 !important;
+      }
+
+      .coach-card .character-wrap{
+        height:190px !important;
+        min-height:0 !important;
+        margin:0 !important;
+        padding:0 !important;
+        align-items:flex-end !important;
+        overflow:hidden !important;
+      }
+
+      .coach-card .character-silhouette{
+        height:205px !important;
+        max-height:205px !important;
+        margin:0 auto -2px !important;
+      }
+
+      .coach-card .ai-comment-text{
+        width:calc(100% - 20px) !important;
+        margin:-1px 10px 10px !important;
+        padding:15px 16px !important;
+        border-radius:18px !important;
       }
     }
   </style>
