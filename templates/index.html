@@ -1,0 +1,337 @@
+
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#8dd8f8">
+  <title>Aqua Log</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">AQUA DAILY LOG</div>
+        <h1>今日の記録</h1>
+      </div>
+      <input id="datePicker" type="date" value="{{ selected_date }}">
+    </header>
+
+    <section id="todayTab" class="tab-panel active">
+      <section class="card weight-card">
+        <div class="section-head">
+          <h2>⚖️ 体重</h2>
+          <span id="weightDiff" class="subtle">前回比 —</span>
+        </div>
+        <div class="weight-input-wrap">
+          <input id="weight" type="number" step="0.1" min="20" max="300" placeholder="00.0">
+          <span>kg</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <h2>🍽️ 食事</h2>
+          <button class="mini-button" type="button" onclick="addMeal()">＋ 食事を追加</button>
+        </div>
+        <div id="mealList"></div>
+      </section>
+
+      <section class="card">
+        <h2>🏃 運動</h2>
+        <div class="exercise-grid">
+          {% for ex in exercises %}
+          <label class="check-pill">
+            <input type="checkbox" class="exercise-check" value="{{ ex }}">
+            <span>{{ ex }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        <textarea id="exerciseMemo" rows="2" placeholder="回数や内容のメモ（例：腹筋20回）"></textarea>
+      </section>
+
+      <section class="card">
+        <div class="section-head">
+          <h2>💪 筋肉痛</h2>
+        </div>
+        <div class="inline-add">
+          <input id="sorenessInput" type="text" placeholder="筋肉名（例：腹直筋）">
+          <button type="button" onclick="addSoreness()">追加</button>
+        </div>
+        <div id="sorenessTags" class="tags"></div>
+      </section>
+
+      <button id="saveButton" class="primary-button" onclick="saveDay()">記録を保存</button>
+
+      <section class="coach-card">
+        <div class="speech-wrap">
+          <div id="aiComment" class="speech-bubble">記録したら、今日の様子を見てコメントする。</div>
+          <button id="aiButton" class="ai-button" onclick="generateAIComment()">AIコメントをもらう</button>
+        </div>
+        <div class="character-wrap">
+          <img src="/static/character.png" alt="" class="character-silhouette">
+        </div>
+      </section>
+    </section>
+
+    <section id="historyTab" class="tab-panel">
+      <section class="card">
+        <h2>📖 履歴</h2>
+        <div id="historyList" class="history-list"></div>
+      </section>
+    </section>
+
+    <section id="graphTab" class="tab-panel">
+      <section class="card">
+        <h2>📈 体重グラフ</h2>
+        <canvas id="weightChart"></canvas>
+      </section>
+    </section>
+
+    <section id="settingsTab" class="tab-panel">
+      <section class="card">
+        <h2>⚙️ 設定</h2>
+        <p class="subtle">v1では環境変数でOpenAI・Supabaseを設定します。</p>
+        <p class="subtle">AIコメントは、嘔吐を「カロリーが減った」とは扱わず、体調情報として参照します。</p>
+      </section>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="todayTab"><span>☀️</span>今日</button>
+    <button class="nav-btn" data-tab="historyTab"><span>📖</span>履歴</button>
+    <button class="nav-btn" data-tab="graphTab"><span>📈</span>グラフ</button>
+    <button class="nav-btn" data-tab="settingsTab"><span>⚙️</span>設定</button>
+  </nav>
+
+<script>
+const mealTypes = ["朝食","昼食","夕飯","夜食","間食"];
+let soreness = [];
+let weightChart = null;
+
+function mealCard(data={}) {
+  const options = mealTypes.map(x => `<option ${x === (data.meal_type || "朝食") ? "selected" : ""}>${x}</option>`).join("");
+  const div = document.createElement("div");
+  div.className = "meal-item";
+  div.innerHTML = `
+    <div class="meal-top">
+      <select class="meal-type">${options}</select>
+      <button type="button" class="delete-button" onclick="this.closest('.meal-item').remove()">削除</button>
+    </div>
+    <textarea class="meal-text" rows="2" placeholder="食べたものを入力">${data.meal_text || ""}</textarea>
+    <label class="vomit-check">
+      <input type="checkbox" class="meal-vomited" ${data.vomited ? "checked" : ""}>
+      <span>この食事のあと嘔吐した</span>
+    </label>`;
+  return div;
+}
+
+function addMeal(data={}) {
+  document.getElementById("mealList").appendChild(mealCard(data));
+}
+
+function addSoreness(name=null) {
+  const input = document.getElementById("sorenessInput");
+  const value = (name || input.value).trim();
+  if (!value || soreness.includes(value)) return;
+  soreness.push(value);
+  input.value = "";
+  renderSoreness();
+}
+
+function renderSoreness() {
+  document.getElementById("sorenessTags").innerHTML = soreness.map((x,i) =>
+    `<button type="button" class="tag" onclick="removeSoreness(${i})">${x} ×</button>`
+  ).join("");
+}
+
+function removeSoreness(i) {
+  soreness.splice(i,1);
+  renderSoreness();
+}
+
+async function loadDay() {
+  const d = document.getElementById("datePicker").value;
+  const res = await fetch(`/api/day/${d}`);
+  if (!res.ok) {
+    console.warn("load failed");
+    document.getElementById("mealList").innerHTML = "";
+    addMeal();
+    return;
+  }
+  const data = await res.json();
+  document.getElementById("weight").value = data.daily?.weight ?? "";
+  document.getElementById("aiComment").textContent = data.daily?.ai_comment || "記録したら、今日の様子を見てコメントする。";
+
+  document.getElementById("mealList").innerHTML = "";
+  (data.meals?.length ? data.meals : [{}]).forEach(addMeal);
+
+  document.querySelectorAll(".exercise-check").forEach(c => c.checked = false);
+  let memos = [];
+  (data.exercises || []).forEach(e => {
+    const box = [...document.querySelectorAll(".exercise-check")].find(x => x.value === e.exercise_type);
+    if (box) box.checked = true;
+    if (e.memo) memos.push(e.memo);
+  });
+  document.getElementById("exerciseMemo").value = [...new Set(memos)].join(" / ");
+
+  soreness = (data.soreness || []).map(x => x.muscle_name);
+  renderSoreness();
+
+  await updateWeightDiff(d, data.daily?.weight);
+}
+
+async function updateWeightDiff(d, currentWeight) {
+  const res = await fetch("/api/weights");
+  if (!res.ok) return;
+  const rows = await res.json();
+  const previous = rows.filter(x => x.log_date < d && x.weight != null).slice(-1)[0];
+  const el = document.getElementById("weightDiff");
+  if (currentWeight != null && previous?.weight != null) {
+    const diff = Number(currentWeight) - Number(previous.weight);
+    el.textContent = `前回比 ${diff >= 0 ? "+" : ""}${diff.toFixed(1)}kg`;
+  } else {
+    el.textContent = "前回比 —";
+  }
+}
+
+function collectMeals() {
+  return [...document.querySelectorAll(".meal-item")].map(row => ({
+    meal_type: row.querySelector(".meal-type").value,
+    meal_text: row.querySelector(".meal-text").value.trim(),
+    vomited: row.querySelector(".meal-vomited").checked
+  }));
+}
+
+async function saveDay(showAlert=true) {
+  const selected = [...document.querySelectorAll(".exercise-check")];
+  const memo = document.getElementById("exerciseMemo").value.trim();
+  const body = {
+    date: document.getElementById("datePicker").value,
+    weight: document.getElementById("weight").value,
+    meals: collectMeals(),
+    exercises: selected.map(x => ({
+      exercise_type: x.value,
+      done: x.checked,
+      memo: x.checked ? memo : ""
+    })),
+    soreness
+  };
+  const btn = document.getElementById("saveButton");
+  btn.disabled = true;
+  btn.textContent = "保存中…";
+  try {
+    const res = await fetch("/api/day", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    if (showAlert) toast("保存しました");
+    await loadDay();
+  } catch(e) {
+    alert("保存できませんでした。Supabase設定を確認してください。");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "記録を保存";
+  }
+}
+
+async function generateAIComment() {
+  await saveDay(false);
+  const btn = document.getElementById("aiButton");
+  const bubble = document.getElementById("aiComment");
+  btn.disabled = true;
+  btn.textContent = "考え中…";
+  bubble.textContent = "今日の記録を見てる……";
+  try {
+    const res = await fetch("/api/ai-comment", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({date:document.getElementById("datePicker").value})
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "AI error");
+    bubble.textContent = data.comment;
+  } catch(e) {
+    bubble.textContent = "コメントを作れなかった。設定を確認してくれ。";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "AIコメントをもらう";
+  }
+}
+
+async function loadHistory() {
+  const res = await fetch("/api/history");
+  if (!res.ok) return;
+  const rows = await res.json();
+  const wrap = document.getElementById("historyList");
+  wrap.innerHTML = rows.length ? rows.map(x => `
+    <button class="history-row" onclick="openDate('${x.log_date}')">
+      <div>
+        <strong>${x.log_date}</strong>
+        <div class="subtle">${x.ai_comment ? escapeHtml(x.ai_comment).slice(0,70) : "AIコメントなし"}</div>
+      </div>
+      <span class="history-weight">${x.weight != null ? x.weight + "kg" : "—"}</span>
+    </button>`).join("") : `<p class="subtle">まだ記録がありません。</p>`;
+}
+
+async function loadGraph() {
+  const res = await fetch("/api/weights");
+  if (!res.ok) return;
+  const rows = await res.json();
+  const ctx = document.getElementById("weightChart");
+  if (weightChart) weightChart.destroy();
+  weightChart = new Chart(ctx, {
+    type:"line",
+    data:{
+      labels:rows.map(x => x.log_date),
+      datasets:[{label:"体重 (kg)", data:rows.map(x => x.weight), tension:.3}]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:false}}
+    }
+  });
+}
+
+function openDate(d) {
+  document.getElementById("datePicker").value = d;
+  switchTab("todayTab");
+  loadDay();
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll(".tab-panel").forEach(x => x.classList.remove("active"));
+  document.getElementById(tabId).classList.add("active");
+  document.querySelectorAll(".nav-btn").forEach(x => x.classList.toggle("active", x.dataset.tab === tabId));
+  if (tabId === "historyTab") loadHistory();
+  if (tabId === "graphTab") loadGraph();
+}
+
+document.querySelectorAll(".nav-btn").forEach(btn => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
+document.getElementById("datePicker").addEventListener("change", loadDay);
+document.getElementById("sorenessInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); addSoreness(); }
+});
+
+function toast(text) {
+  const x = document.createElement("div");
+  x.className = "toast";
+  x.textContent = text;
+  document.body.appendChild(x);
+  setTimeout(() => x.remove(), 1700);
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+}
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("/static/sw.js");
+loadDay();
+</script>
+</body>
+</html>
