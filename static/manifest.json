@@ -1,6 +1,6 @@
 {
-  "name": "Aqua Daily Log",
-  "short_name": "AquaLog",
+  "name": "AquaDiet",
+  "short_name": "AquaDiet",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#edf9ff",

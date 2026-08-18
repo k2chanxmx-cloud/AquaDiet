@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: aqua-daily-log
+    name: aquadiet
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --timeout 120
