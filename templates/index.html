@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#8dd8f8">
   <title>Aqua Log</title>
   <link rel="manifest" href="/static/manifest.json">
-  <link rel="stylesheet" href="/static/style.css?v=2.2">
+  <link rel="stylesheet" href="/static/style.css?v=2.3">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -563,19 +563,31 @@ function switchTab(tabId) {
 }
 
 document.querySelectorAll(".nav-btn").forEach(btn => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
-document.getElementById("datePicker").addEventListener("change", async function() {
-  // iPhone Safariで日付ピッカーのフォーカスが残り、
-  // その後textareaをタップしてもキーボードが出ないことがあるため明示的にblurする
-  this.blur();
+document.getElementById("datePicker").addEventListener("change", function() {
+  const picker = this;
 
-  await loadDay();
+  // iOS Safari / PWA対策:
+  // ネイティブ日付ピッカーを完全に閉じてからフォームを再生成する
+  picker.blur();
 
-  // iOSのネイティブ日付ピッカー終了後にフォーカス状態を確実に解除
-  setTimeout(() => {
+  setTimeout(async () => {
+    await loadDay();
+
+    // 念のためフォーカスを完全解除
     if (document.activeElement && typeof document.activeElement.blur === "function") {
       document.activeElement.blur();
     }
-  }, 80);
+
+    // iOSで再描画後にtextareaがタップ不能になるケースへの対策
+    document.querySelectorAll(".meal-text, #exerciseMemo, #sorenessInput").forEach(el => {
+      el.removeAttribute("readonly");
+      el.removeAttribute("disabled");
+      el.style.pointerEvents = "auto";
+      el.style.webkitUserSelect = "text";
+      el.style.userSelect = "text";
+      el.style.touchAction = "manipulation";
+    });
+  }, 350);
 });
 document.getElementById("sorenessInput").addEventListener("keydown", e => {
   if (e.key === "Enter") { e.preventDefault(); addSoreness(); }
@@ -591,6 +603,27 @@ function toast(text) {
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 }
+
+
+document.addEventListener("touchend", function(e) {
+  const target = e.target;
+  if (
+    target &&
+    (
+      target.classList?.contains("meal-text") ||
+      target.id === "exerciseMemo" ||
+      target.id === "sorenessInput"
+    )
+  ) {
+    setTimeout(() => {
+      try {
+        target.focus({preventScroll:true});
+      } catch (_) {
+        target.focus();
+      }
+    }, 0);
+  }
+}, {passive:true});
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/static/sw.js");
 loadDay();
