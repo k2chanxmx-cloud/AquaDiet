@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#8dd8f8">
   <title>Aqua Log</title>
   <link rel="manifest" href="/static/manifest.json">
-  <link rel="stylesheet" href="/static/style.css?v=1.6">
+  <link rel="stylesheet" href="/static/style.css?v=1.8">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -20,6 +20,126 @@
       min-width:0 !important;
       justify-self:stretch !important;
       text-align:center !important;
+    }
+  </style>
+
+
+  <style id="coach-layout-v18">
+    .coach-card{
+      display:block !important;
+      position:relative !important;
+      min-height:0 !important;
+      padding:0 !important;
+      margin-bottom:14px !important;
+      background:transparent !important;
+      border-radius:28px !important;
+      box-shadow:0 12px 30px rgba(61,151,93,.12) !important;
+      overflow:hidden !important;
+    }
+
+    /* 緑の大きな1枚カード */
+    .coach-card .coach-visual{
+      width:100% !important;
+      min-height:0 !important;
+      padding:22px 18px 0 !important;
+      margin:0 !important;
+      background:linear-gradient(145deg,#ccefd6 0%,#eaf8ee 100%) !important;
+      display:flex !important;
+      flex-direction:column !important;
+      align-items:center !important;
+      box-sizing:border-box !important;
+    }
+
+    .coach-card .coach-title{
+      width:100% !important;
+      margin:0 0 8px !important;
+      text-align:center !important;
+      font-size:18px !important;
+      line-height:1.4 !important;
+      font-weight:900 !important;
+      color:#287d45 !important;
+    }
+
+    /* あきおちゃんを中央・大きめ */
+    .coach-card .character-wrap{
+      position:static !important;
+      width:100% !important;
+      height:270px !important;
+      margin:0 !important;
+      padding:0 !important;
+      display:flex !important;
+      justify-content:center !important;
+      align-items:flex-end !important;
+      overflow:hidden !important;
+      transform:none !important;
+    }
+
+    .coach-card .character-silhouette{
+      display:block !important;
+      position:static !important;
+      width:auto !important;
+      height:270px !important;
+      max-width:95% !important;
+      max-height:270px !important;
+      object-fit:contain !important;
+      object-position:bottom center !important;
+      opacity:1 !important;
+      transform:none !important;
+      filter:none !important;
+      margin:0 auto !important;
+    }
+
+    /* 白コメントカードを緑カードの内側へ */
+    .coach-card .ai-comment-text{
+      display:block !important;
+      position:relative !important;
+      z-index:3 !important;
+      width:calc(100% - 36px) !important;
+      min-height:120px !important;
+      margin:-2px 18px 20px !important;
+      padding:20px 22px !important;
+      background:#fff !important;
+      border:0 !important;
+      border-radius:22px !important;
+      box-shadow:0 8px 22px rgba(42,118,70,.10) !important;
+      color:#23412d !important;
+      font-size:15px !important;
+      font-weight:700 !important;
+      line-height:1.9 !important;
+      text-align:left !important;
+      white-space:pre-wrap !important;
+      box-sizing:border-box !important;
+    }
+
+    /* ai-comment-textも緑背景の中に見えるよう、カード全体の下地を緑にする */
+    .coach-card{
+      background:linear-gradient(145deg,#ccefd6 0%,#eaf8ee 100%) !important;
+    }
+
+    @media(max-width:480px){
+      .coach-card .coach-visual{
+        padding:18px 12px 0 !important;
+      }
+      .coach-card .coach-title{
+        font-size:16px !important;
+        margin-bottom:4px !important;
+      }
+      .coach-card .character-wrap{
+        height:245px !important;
+      }
+      .coach-card .character-silhouette{
+        height:245px !important;
+        max-height:245px !important;
+        max-width:98% !important;
+      }
+      .coach-card .ai-comment-text{
+        width:calc(100% - 28px) !important;
+        margin:0 14px 16px !important;
+        padding:17px !important;
+        border-radius:18px !important;
+        font-size:14px !important;
+        line-height:1.85 !important;
+      }
     }
   </style>
 
