@@ -1,10 +1,8 @@
-const CACHE = "aquadiet-v1-3";
+const CACHE = "aquadiet-browser-fix-v1";
 
 const ASSETS = [
-  "/",
   "/static/style.css",
-  "/static/character.webp",
-  "/static/manifest.json"
+  "/static/character.webp"
 ];
 
 self.addEventListener("install", event => {

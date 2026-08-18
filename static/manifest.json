@@ -2,9 +2,9 @@
   "name": "AquaDiet",
   "short_name": "AquaDiet",
   "start_url": "/",
-  "display": "standalone",
-  "background_color": "#edf9ff",
-  "theme_color": "#8dd8f8",
+  "display": "browser",
+  "background_color": "#eef9f1",
+  "theme_color": "#8ed6a4",
   "icons": [
     {
       "src": "/static/icon-192.png",
