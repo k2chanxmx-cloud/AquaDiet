@@ -3,7 +3,7 @@ services:
     name: aquadiet
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --timeout 120
+    startCommand: gunicorn app:app --timeout 180
     envVars:
       - key: SUPABASE_URL
         sync: false

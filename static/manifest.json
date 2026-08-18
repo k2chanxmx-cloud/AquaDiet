@@ -2,7 +2,7 @@
   "name": "AquaDiet",
   "short_name": "AquaDiet",
   "start_url": "/",
-  "display": "standalone",
+  "display": "browser",
   "background_color": "#eef9f1",
   "theme_color": "#8ed6a4",
   "icons": [
@@ -16,5 +16,6 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+  "scope": "/"
 }
