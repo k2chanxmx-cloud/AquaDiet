@@ -64,12 +64,11 @@
         <div id="sorenessTags" class="tags"></div>
       </section>
 
-      <button id="saveButton" class="primary-button" onclick="saveDay()">記録を保存</button>
+      <button id="saveButton" class="primary-button" onclick="saveDayAndComment()">記録を保存</button>
 
       <section class="coach-card">
         <div class="speech-wrap">
           <div id="aiComment" class="speech-bubble">記録したら、今日の様子を見てコメントする。</div>
-          <button id="aiButton" class="ai-button" onclick="generateAIComment()">AIコメントをもらう</button>
         </div>
         <div class="character-wrap">
           <img src="/static/character.webp" alt="" class="character-silhouette">
@@ -220,20 +219,48 @@ async function saveDay(showAlert=true) {
     })),
     soreness
   };
+
+  const res = await fetch("/api/day", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(body)
+  });
+
+  if (!res.ok) throw new Error(await res.text());
+  if (showAlert) toast("保存しました");
+  return true;
+}
+
+async function saveDayAndComment() {
   const btn = document.getElementById("saveButton");
+  const bubble = document.getElementById("aiComment");
+
   btn.disabled = true;
-  btn.textContent = "保存中…";
+  btn.textContent = "保存してコメント作成中…";
+  bubble.textContent = "今日の記録を見てる……";
+
   try {
-    const res = await fetch("/api/day", {
+    await saveDay(false);
+
+    const res = await fetch("/api/ai-comment", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify(body)
+      body:JSON.stringify({date:document.getElementById("datePicker").value})
     });
-    if (!res.ok) throw new Error(await res.text());
-    if (showAlert) toast("保存しました");
-    await loadDay();
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "AI error");
+
+    bubble.textContent = data.comment;
+    toast("保存しました");
+    await updateWeightDiff(
+      document.getElementById("datePicker").value,
+      document.getElementById("weight").value || null
+    );
   } catch(e) {
-    alert("保存できませんでした。Supabase設定を確認してください。");
+    console.error(e);
+    bubble.textContent = "記録は確認した。AIコメントを作れなかった場合は、少ししてからもう一度保存してみてくれ。";
+    alert("保存またはAIコメント生成でエラーが発生しました。Renderのログを確認してください。");
   } finally {
     btn.disabled = false;
     btn.textContent = "記録を保存";
@@ -241,27 +268,17 @@ async function saveDay(showAlert=true) {
 }
 
 async function generateAIComment() {
-  await saveDay(false);
-  const btn = document.getElementById("aiButton");
+  // 履歴等から再生成したくなった時のために関数自体は残す
   const bubble = document.getElementById("aiComment");
-  btn.disabled = true;
-  btn.textContent = "考え中…";
   bubble.textContent = "今日の記録を見てる……";
-  try {
-    const res = await fetch("/api/ai-comment", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({date:document.getElementById("datePicker").value})
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "AI error");
-    bubble.textContent = data.comment;
-  } catch(e) {
-    bubble.textContent = "コメントを作れなかった。設定を確認してくれ。";
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "AIコメントをもらう";
-  }
+  const res = await fetch("/api/ai-comment", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({date:document.getElementById("datePicker").value})
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "AI error");
+  bubble.textContent = data.comment;
 }
 
 async function loadHistory() {

@@ -88,24 +88,46 @@ textarea:focus,input:focus,select:focus{border-color:var(--aqua-deep);outline:no
 }
 .primary-button:disabled,.ai-button:disabled{opacity:.6}
 .coach-card{
-  min-height:220px;display:grid;grid-template-columns:1.4fr .75fr;gap:8px;align-items:end;
-  background:linear-gradient(135deg,#d3f2dc,#f0faf3);border-radius:28px;padding:18px 14px 0 18px;
-  box-shadow:var(--shadow);overflow:hidden
+  min-height:360px;
+  display:grid;
+  grid-template-columns:minmax(0,1.65fr) minmax(190px,.85fr);
+  gap:12px;
+  align-items:end;
+  background:linear-gradient(135deg,#d3f2dc,#f0faf3);
+  border-radius:28px;
+  padding:20px 16px 0 20px;
+  box-shadow:var(--shadow);
+  overflow:hidden
 }
-.speech-wrap{align-self:start;padding-top:8px}
+.speech-wrap{align-self:stretch;padding-top:8px;padding-bottom:18px;display:flex;flex-direction:column}
 .speech-bubble{
-  position:relative;background:white;border-radius:20px;padding:16px;font-size:14px;font-weight:700;line-height:1.75;
-  min-height:100px;box-shadow:0 8px 18px rgba(42,118,70,.10)
+  position:relative;
+  background:white;
+  border-radius:24px;
+  padding:20px;
+  font-size:15px;
+  font-weight:700;
+  line-height:1.9;
+  min-height:230px;
+  flex:1;
+  box-shadow:0 8px 18px rgba(42,118,70,.10);
+  white-space:pre-wrap
 }
 .speech-bubble:after{
   content:"";position:absolute;right:-14px;bottom:25px;border-width:10px 0 10px 16px;border-style:solid;
   border-color:transparent transparent transparent white
 }
 .ai-button{margin-top:10px;background:white}
-.character-wrap{display:flex;justify-content:center;align-items:end;height:205px}
+.character-wrap{display:flex;justify-content:center;align-items:end;height:335px;overflow:visible}
 .character-silhouette{
-  width:100%;max-height:205px;object-fit:contain;object-position:bottom;
-  opacity:.98
+  width:100%;
+  max-width:250px;
+  max-height:330px;
+  object-fit:contain;
+  object-position:bottom;
+  opacity:.98;
+  transform:scale(1.22);
+  transform-origin:bottom center
 }
 .bottom-nav{
   position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(720px,100%);
@@ -129,6 +151,12 @@ textarea:focus,input:focus,select:focus{border-color:var(--aqua-deep);outline:no
 @media(max-width:480px){
   .topbar{align-items:flex-end}
   h1{font-size:23px}
-  .coach-card{grid-template-columns:1.45fr .7fr}
-  .character-wrap{height:180px}.character-silhouette{max-height:180px}
+  .coach-card{
+    min-height:390px;
+    grid-template-columns:minmax(0,1.45fr) minmax(125px,.75fr);
+    padding:16px 10px 0 16px
+  }
+  .speech-bubble{min-height:260px;font-size:14px;padding:17px}
+  .character-wrap{height:300px}
+  .character-silhouette{max-width:205px;max-height:300px;transform:scale(1.28)}
 }
