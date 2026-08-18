@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#8dd8f8">
   <title>Aqua Log</title>
   <link rel="manifest" href="/static/manifest.json">
-  <link rel="stylesheet" href="/static/style.css?v=2.1">
+  <link rel="stylesheet" href="/static/style.css?v=2.2">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -563,7 +563,20 @@ function switchTab(tabId) {
 }
 
 document.querySelectorAll(".nav-btn").forEach(btn => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
-document.getElementById("datePicker").addEventListener("change", loadDay);
+document.getElementById("datePicker").addEventListener("change", async function() {
+  // iPhone Safariで日付ピッカーのフォーカスが残り、
+  // その後textareaをタップしてもキーボードが出ないことがあるため明示的にblurする
+  this.blur();
+
+  await loadDay();
+
+  // iOSのネイティブ日付ピッカー終了後にフォーカス状態を確実に解除
+  setTimeout(() => {
+    if (document.activeElement && typeof document.activeElement.blur === "function") {
+      document.activeElement.blur();
+    }
+  }, 80);
+});
 document.getElementById("sorenessInput").addEventListener("keydown", e => {
   if (e.key === "Enter") { e.preventDefault(); addSoreness(); }
 });
