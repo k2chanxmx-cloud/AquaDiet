@@ -65,3 +65,13 @@ v1は1ユーザー用のシンプル構成です。
 - あきおちゃん口調設定を反映
 - OpenAI API timeout 150秒 / Gunicorn timeout 180秒
 - Service WorkerはAPI通信をキャッシュしない
+
+
+## FULL FINAL v2
+- iPhoneホーム画面からSafari（browser mode）で開く仕様
+- 保存後にAIコメント自動生成
+- AIコメントは300〜500文字・5〜8文
+- AIコメント欄は内容に合わせて縦に自動伸長
+- OpenAI timeout 150秒 / max_output_tokens 1200
+- Gunicorn timeout 180秒
+- Service WorkerはAPI通信をキャッシュしない

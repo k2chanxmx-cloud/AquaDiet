@@ -1,4 +1,4 @@
-const CACHE = "aquadiet-final-browser-v1";
+const CACHE = "aquadiet-full-final-v2";
 
 const ASSETS = [
   "/static/style.css",
@@ -26,7 +26,6 @@ self.addEventListener("activate", event => {
 });
 
 self.addEventListener("fetch", event => {
-  // API通信とPOST/PUT/DELETE等はService Workerで触らない
   if (
     event.request.method !== "GET" ||
     event.request.url.includes("/api/")
@@ -34,7 +33,6 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // HTML/navigationは常にネットワーク優先
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(event.request))
@@ -42,7 +40,6 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-  // CSS・画像等もネットワーク優先、失敗時のみキャッシュ
   event.respondWith(
     fetch(event.request)
       .then(response => {
