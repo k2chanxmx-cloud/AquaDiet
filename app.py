@@ -270,11 +270,22 @@ def ai_comment():
         model=OPENAI_MODEL,
         instructions=system,
         input=json.dumps(summary, ensure_ascii=False),
-        max_output_tokens=1200
+        reasoning={"effort": "minimal"},
+        max_output_tokens=3000
     )
     comment = (response.output_text or "").strip()
 
     if not comment:
+        try:
+            app.logger.warning(
+                "OpenAI response had empty output_text. status=%s incomplete_details=%s output=%r",
+                getattr(response, "status", None),
+                getattr(response, "incomplete_details", None),
+                getattr(response, "output", None),
+            )
+        except Exception:
+            app.logger.exception("Failed to log empty OpenAI response diagnostics.")
+
         comment = "今日はうまくコメントを作れなかった。もう一回保存してみろ。"
 
     existing = safe_rows(

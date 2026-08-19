@@ -75,3 +75,10 @@ v1は1ユーザー用のシンプル構成です。
 - OpenAI timeout 150秒 / max_output_tokens 1200
 - Gunicorn timeout 180秒
 - Service WorkerはAPI通信をキャッシュしない
+
+
+## FULL FINAL v3
+- AIコメントは300〜500文字・5〜8文のまま
+- max_output_tokensを3000へ拡張
+- reasoning effortをminimalへ設定
+- output_textが空の場合、OpenAIレスポンス状態をRenderログへ出力
