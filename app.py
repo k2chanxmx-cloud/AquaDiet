@@ -42,6 +42,9 @@ def _shorten(text, limit):
 
 
 def build_tweet_text(selected_date, weight, meals, exercises, soreness):
+    """Build a compact daily summary within 140 chars including fixed hashtag."""
+    hashtag = "#じゃない方ダイエット"
+
     try:
         d = datetime.strptime(selected_date, "%Y-%m-%d")
         date_label = f"{d.month}/{d.day}"
@@ -50,6 +53,7 @@ def build_tweet_text(selected_date, weight, meals, exercises, soreness):
 
     meal_labels = {"朝食": "朝", "昼食": "昼", "夕飯": "夜", "間食": "間", "夜食": "夜食"}
     lines = [date_label]
+
     if weight not in (None, ""):
         lines.append(f"⚖️{weight}kg")
 
@@ -71,6 +75,7 @@ def build_tweet_text(selected_date, weight, meals, exercises, soreness):
         memo = (e.get("memo") or "").strip()
         if name:
             ex_texts.append(name + (f" {memo}" if memo else ""))
+
     if ex_texts:
         lines.append("🏃" + "・".join(ex_texts))
 
@@ -79,25 +84,42 @@ def build_tweet_text(selected_date, weight, meals, exercises, soreness):
     if sore_names:
         lines.append("💪" + "・".join(sore_names))
 
-    text = "\n".join(lines)
+    def with_tag(body_lines):
+        body = "\n".join(body_lines).rstrip()
+        return f"{body}\n\n{hashtag}"
+
+    text = with_tag(lines)
     if len(text) <= 140:
         return text
 
     compact = [date_label]
+
     if weight not in (None, ""):
         compact.append(f"⚖️{weight}kg")
+
     for meal_type in ["朝食", "昼食", "夕飯", "間食", "夜食"]:
         vals = grouped.get(meal_type)
         if vals:
-            compact.append(f"{meal_labels[meal_type]}:{_shorten('・'.join(vals), 18)}")
+            compact.append(f"{meal_labels[meal_type]}:{_shorten('・'.join(vals), 14)}")
+
     if ex_texts:
-        compact.append("🏃" + _shorten("・".join(ex_texts), 24))
+        compact.append("🏃" + _shorten("・".join(ex_texts), 18))
+
     if sore_names:
-        compact.append("💪" + _shorten("・".join(sore_names), 20))
+        compact.append("💪" + _shorten("・".join(sore_names), 16))
 
-    text = "\n".join(compact)
-    return text if len(text) <= 140 else text[:139] + "…"
+    text = with_tag(compact)
+    if len(text) <= 140:
+        return text
 
+    suffix = f"\n\n{hashtag}"
+    body_limit = 140 - len(suffix)
+    body = "\n".join(compact)
+
+    if len(body) > body_limit:
+        body = body[:max(0, body_limit - 1)] + "…"
+
+    return body + suffix
 
 @app.route("/")
 def index():
@@ -421,9 +443,22 @@ def save_tweet():
     payload = request.get_json(force=True)
     selected_date = payload["date"]
     tweet_text = (payload.get("tweet_text") or "").strip()
+    hashtag = "#じゃない方ダイエット"
+
+    if hashtag not in tweet_text:
+        tweet_text = tweet_text.rstrip() + f"\n\n{hashtag}"
+    elif not tweet_text.rstrip().endswith(hashtag):
+        tweet_text = tweet_text.replace(hashtag, "").rstrip() + f"\n\n{hashtag}"
 
     if len(tweet_text) > 140:
-        return jsonify({"error": "140文字を超えています。"}), 400
+        suffix = f"\n\n{hashtag}"
+        body = tweet_text[:-len(suffix)].rstrip()
+        body_limit = 140 - len(suffix)
+
+        if len(body) > body_limit:
+            body = body[:max(0, body_limit - 1)] + "…"
+
+        tweet_text = body + suffix
 
     existing = safe_rows(
         supabase.table("tweet_logs").select("id").eq("log_date", selected_date).limit(1).execute()
@@ -440,8 +475,7 @@ def save_tweet():
     else:
         supabase.table("tweet_logs").insert(row).execute()
 
-    return jsonify({"ok": True, "count": len(tweet_text)})
-
+    return jsonify({"ok": True, "count": len(tweet_text), "tweet_text": tweet_text})
 
 @app.get("/api/tweets")
 def list_tweets():
