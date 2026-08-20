@@ -44,3 +44,19 @@ create table if not exists tweet_logs (
 );
 
 create index if not exists idx_tweet_date on tweet_logs(log_date);
+
+
+-- v5: 運動記録を「種目 + 回数/分」で保存
+alter table exercise_logs
+  add column if not exists amount integer;
+
+alter table exercise_logs
+  add column if not exists unit text;
+
+-- 既存のexercise_type CHECK制約がある場合は作り直す
+alter table exercise_logs
+  drop constraint if exists exercise_logs_exercise_type_check;
+
+alter table exercise_logs
+  add constraint exercise_logs_exercise_type_check
+  check (exercise_type in ('腹筋','腹斜筋','スクワット','ランニング','ジム','パーソナル'));

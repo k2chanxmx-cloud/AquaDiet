@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#8ed6a4">
   <title>AquaDiet</title>
   <link rel="manifest" href="/static/manifest.json?v=final2">
-  <link rel="stylesheet" href="/static/style.css?v=tweet4">
+  <link rel="stylesheet" href="/static/style.css?v=training5">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
@@ -276,6 +276,72 @@
     .tweet-history-row span{display:block;font-size:13px;line-height:1.6;}
   </style>
 
+
+  <style id="exercise-row-ui-v5">
+    .exercise-item{
+      background:#f8fcf9;
+      border:1px solid #d7ecdd;
+      border-radius:18px;
+      padding:13px;
+      margin-top:10px;
+    }
+    .exercise-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .exercise-type{
+      border:1px solid #d7ecdd;
+      background:#fff;
+      color:#23412d;
+      border-radius:12px;
+      padding:9px 34px 9px 11px;
+      font-weight:800;
+    }
+    .exercise-amount-row{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-bottom:10px;
+    }
+    .exercise-amount{
+      width:120px;
+      border:1px solid #d7ecdd;
+      background:#fff;
+      border-radius:14px;
+      padding:12px;
+      color:#23412d;
+      font-size:16px;
+    }
+    .exercise-unit{
+      font-weight:900;
+      color:#3d8b57;
+    }
+    .exercise-memo{
+      width:100%;
+      border:1px solid #d7ecdd;
+      background:#fff;
+      border-radius:14px;
+      padding:12px;
+      color:#23412d;
+    }
+    .exercise-add-button{
+      width:100%;
+      margin-top:12px;
+      border:0;
+      border-radius:16px;
+      background:#e3f6e9;
+      color:#287d45;
+      padding:13px 16px;
+      font-weight:900;
+      font-size:15px;
+      text-align:center;
+      box-shadow:0 4px 12px rgba(66,173,104,.08);
+    }
+  </style>
+
 </head>
 <body>
   <main class="app-shell">
@@ -309,16 +375,13 @@
       </section>
 
       <section class="card">
-        <h2>🏃 運動</h2>
-        <div class="exercise-grid">
-          {% for ex in exercises %}
-          <label class="check-pill">
-            <input type="checkbox" class="exercise-check" value="{{ ex }}">
-            <span>{{ ex }}</span>
-          </label>
-          {% endfor %}
+        <div class="section-head">
+          <h2>🏃 トレーニング</h2>
         </div>
-        <textarea id="exerciseMemo" rows="2" placeholder="回数や内容のメモ（例：腹筋20回）"></textarea>
+
+        <div id="exerciseList"></div>
+
+        <button class="exercise-add-button" type="button" onclick="addExercise()">＋ トレーニングを追加</button>
       </section>
 
       <section class="card">
@@ -452,14 +515,8 @@ async function loadDay() {
   document.getElementById("mealList").innerHTML = "";
   (data.meals?.length ? data.meals : [{}]).forEach(addMeal);
 
-  document.querySelectorAll(".exercise-check").forEach(c => c.checked = false);
-  let memos = [];
-  (data.exercises || []).forEach(e => {
-    const box = [...document.querySelectorAll(".exercise-check")].find(x => x.value === e.exercise_type);
-    if (box) box.checked = true;
-    if (e.memo) memos.push(e.memo);
-  });
-  document.getElementById("exerciseMemo").value = [...new Set(memos)].join(" / ");
+  document.getElementById("exerciseList").innerHTML = "";
+  (data.exercises?.length ? data.exercises : [{}]).forEach(addExercise);
 
   soreness = (data.soreness || []).map(x => x.muscle_name);
   renderSoreness();
@@ -489,18 +546,82 @@ function collectMeals() {
   }));
 }
 
+
+const exerciseTypes = ["腹筋","腹斜筋","スクワット","ランニング","ジム","パーソナル"];
+
+function exerciseCard(data={}) {
+  const selectedType = data.exercise_type || "腹筋";
+  const options = exerciseTypes.map(x =>
+    `<option ${x === selectedType ? "selected" : ""}>${x}</option>`
+  ).join("");
+
+  const div = document.createElement("div");
+  div.className = "exercise-item";
+
+  div.innerHTML = `
+    <div class="exercise-top">
+      <select class="exercise-type" onchange="updateExerciseUnit(this)">
+        ${options}
+      </select>
+      <button type="button" class="delete-button" onclick="this.closest('.exercise-item').remove()">削除</button>
+    </div>
+
+    <div class="exercise-amount-row">
+      <input
+        class="exercise-amount"
+        type="number"
+        min="0"
+        inputmode="numeric"
+        placeholder="${selectedType === "ランニング" ? "時間" : "回数"}"
+        value="${data.amount ?? ""}"
+      >
+      <span class="exercise-unit">${data.unit || (selectedType === "ランニング" ? "分" : "回")}</span>
+    </div>
+
+    <input
+      class="exercise-memo"
+      type="text"
+      placeholder="メモ（任意）"
+      value="${escapeHtml(data.memo || "")}"
+    >
+  `;
+
+  return div;
+}
+
+function addExercise(data={}) {
+  document.getElementById("exerciseList").appendChild(exerciseCard(data));
+}
+
+function updateExerciseUnit(select) {
+  const row = select.closest(".exercise-item");
+  const unit = row.querySelector(".exercise-unit");
+  const amount = row.querySelector(".exercise-amount");
+
+  if (select.value === "ランニング") {
+    unit.textContent = "分";
+    amount.placeholder = "時間";
+  } else {
+    unit.textContent = "回";
+    amount.placeholder = "回数";
+  }
+}
+
+function collectExercises() {
+  return [...document.querySelectorAll(".exercise-item")].map(row => ({
+    exercise_type: row.querySelector(".exercise-type").value,
+    amount: row.querySelector(".exercise-amount").value,
+    unit: row.querySelector(".exercise-unit").textContent.trim(),
+    memo: row.querySelector(".exercise-memo").value.trim()
+  })).filter(x => x.exercise_type);
+}
+
 async function saveDay(showAlert=true) {
-  const selected = [...document.querySelectorAll(".exercise-check")];
-  const memo = document.getElementById("exerciseMemo").value.trim();
   const body = {
     date: document.getElementById("datePicker").value,
     weight: document.getElementById("weight").value,
     meals: collectMeals(),
-    exercises: selected.map(x => ({
-      exercise_type: x.value,
-      done: x.checked,
-      memo: x.checked ? memo : ""
-    })),
+    exercises: collectExercises(),
     soreness
   };
 

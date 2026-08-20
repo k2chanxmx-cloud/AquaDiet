@@ -24,7 +24,7 @@ client = OpenAI(
 ) if OPENAI_API_KEY else None
 
 MEAL_ORDER = {"朝食": 1, "昼食": 2, "夕飯": 3, "夜食": 4, "間食": 5}
-EXERCISES = ["腹筋", "腹斜筋", "スクワット", "ジム", "パーソナル"]
+EXERCISES = ["腹筋", "腹斜筋", "スクワット", "ランニング", "ジム", "パーソナル"]
 
 
 def ensure_db():
@@ -73,8 +73,16 @@ def build_tweet_text(selected_date, weight, meals, exercises, soreness):
     for e in exercises or []:
         name = (e.get("exercise_type") or "").strip()
         memo = (e.get("memo") or "").strip()
+        amount = e.get("amount")
+        unit = (e.get("unit") or ("分" if name == "ランニング" else "回")).strip()
+
         if name:
-            ex_texts.append(name + (f" {memo}" if memo else ""))
+            amount_text = f"{amount}{unit}" if amount not in (None, "") else ""
+            detail = "".join([
+                f" {amount_text}" if amount_text else "",
+                f" {memo}" if memo else ""
+            ])
+            ex_texts.append(name + detail)
 
     if ex_texts:
         lines.append("🏃" + "・".join(ex_texts))
@@ -205,12 +213,25 @@ def save_day():
     exercise_rows = []
     for e in exercises:
         etype = e.get("exercise_type")
-        if etype in EXERCISES and e.get("done"):
+        amount = e.get("amount")
+        unit = (e.get("unit") or ("分" if etype == "ランニング" else "回")).strip()
+        memo = (e.get("memo") or "").strip()
+
+        if etype in EXERCISES:
+            try:
+                amount_value = int(amount) if amount not in (None, "") else None
+            except (TypeError, ValueError):
+                amount_value = None
+
+            # 種目だけ選んだ行も保存可能。回数/分は未入力でもOK。
             exercise_rows.append({
                 "log_date": selected_date,
                 "exercise_type": etype,
-                "memo": (e.get("memo") or "").strip()
+                "amount": amount_value,
+                "unit": unit,
+                "memo": memo
             })
+
     if exercise_rows:
         supabase.table("exercise_logs").insert(exercise_rows).execute()
 
@@ -272,8 +293,15 @@ def ai_comment():
             }
             for m in meals
         ],
-        "exercises": [e.get("exercise_type") for e in exercises],
-        "exercise_memos": [e.get("memo") for e in exercises if e.get("memo")],
+        "exercises": [
+            {
+                "type": e.get("exercise_type"),
+                "amount": e.get("amount"),
+                "unit": e.get("unit"),
+                "memo": e.get("memo")
+            }
+            for e in exercises
+        ],
         "muscle_soreness": [s.get("muscle_name") for s in soreness],
     }
 
