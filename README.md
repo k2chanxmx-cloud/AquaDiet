@@ -82,3 +82,14 @@ v1は1ユーザー用のシンプル構成です。
 - max_output_tokensを3000へ拡張
 - reasoning effortをminimalへ設定
 - output_textが空の場合、OpenAIレスポンス状態をRenderログへ出力
+
+
+## v4 ツイート機能
+- 下部メニューに「ツイート」を追加
+- 当日の体重 / 朝昼夜 / 間食 / 夜食 / 運動 / 筋肉痛から140字以内で自動生成
+- 手動編集 / 再生成 / 保存 / コピー
+- 日付ごとにtweet_logsへ保存
+- 過去90件を一覧表示
+
+### 既存Supabaseへの追加
+`schema.sql` 末尾に追加された `tweet_logs` のCREATE TABLE文をSQL Editorで実行してください。

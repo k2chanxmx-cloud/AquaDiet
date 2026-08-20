@@ -36,6 +36,69 @@ def safe_rows(resp):
     return getattr(resp, "data", None) or []
 
 
+def _shorten(text, limit):
+    text = (text or "").strip().replace("\n", " ")
+    return text if len(text) <= limit else text[:max(0, limit - 1)] + "…"
+
+
+def build_tweet_text(selected_date, weight, meals, exercises, soreness):
+    try:
+        d = datetime.strptime(selected_date, "%Y-%m-%d")
+        date_label = f"{d.month}/{d.day}"
+    except Exception:
+        date_label = selected_date
+
+    meal_labels = {"朝食": "朝", "昼食": "昼", "夕飯": "夜", "間食": "間", "夜食": "夜食"}
+    lines = [date_label]
+    if weight not in (None, ""):
+        lines.append(f"⚖️{weight}kg")
+
+    grouped = {}
+    for m in meals or []:
+        meal_type = m.get("meal_type") or ""
+        meal_text = (m.get("meal_text") or "").strip()
+        if meal_text:
+            grouped.setdefault(meal_type, []).append(meal_text)
+
+    for meal_type in ["朝食", "昼食", "夕飯", "間食", "夜食"]:
+        vals = grouped.get(meal_type)
+        if vals:
+            lines.append(f"{meal_labels[meal_type]}:{'・'.join(vals)}")
+
+    ex_texts = []
+    for e in exercises or []:
+        name = (e.get("exercise_type") or "").strip()
+        memo = (e.get("memo") or "").strip()
+        if name:
+            ex_texts.append(name + (f" {memo}" if memo else ""))
+    if ex_texts:
+        lines.append("🏃" + "・".join(ex_texts))
+
+    sore_names = [(s.get("muscle_name") or "").strip() for s in (soreness or [])]
+    sore_names = [x for x in sore_names if x]
+    if sore_names:
+        lines.append("💪" + "・".join(sore_names))
+
+    text = "\n".join(lines)
+    if len(text) <= 140:
+        return text
+
+    compact = [date_label]
+    if weight not in (None, ""):
+        compact.append(f"⚖️{weight}kg")
+    for meal_type in ["朝食", "昼食", "夕飯", "間食", "夜食"]:
+        vals = grouped.get(meal_type)
+        if vals:
+            compact.append(f"{meal_labels[meal_type]}:{_shorten('・'.join(vals), 18)}")
+    if ex_texts:
+        compact.append("🏃" + _shorten("・".join(ex_texts), 24))
+    if sore_names:
+        compact.append("💪" + _shorten("・".join(sore_names), 20))
+
+    text = "\n".join(compact)
+    return text if len(text) <= 140 else text[:139] + "…"
+
+
 @app.route("/")
 def index():
     selected_date = request.args.get("date") or date.today().isoformat()
@@ -301,6 +364,96 @@ def ai_comment():
         }).execute()
 
     return jsonify({"comment": comment})
+
+
+@app.get("/api/tweet/<selected_date>")
+def get_tweet(selected_date):
+    ensure_db()
+    rows = safe_rows(
+        supabase.table("tweet_logs").select("*").eq("log_date", selected_date).limit(1).execute()
+    )
+    return jsonify(rows[0] if rows else None)
+
+
+@app.post("/api/tweet/generate")
+def generate_tweet():
+    ensure_db()
+    payload = request.get_json(force=True)
+    selected_date = payload["date"]
+
+    daily = safe_rows(
+        supabase.table("daily_logs").select("*").eq("log_date", selected_date).limit(1).execute()
+    )
+    meals = safe_rows(
+        supabase.table("meal_logs").select("*").eq("log_date", selected_date).execute()
+    )
+    exercises = safe_rows(
+        supabase.table("exercise_logs").select("*").eq("log_date", selected_date).execute()
+    )
+    soreness = safe_rows(
+        supabase.table("muscle_soreness_logs").select("*").eq("log_date", selected_date).execute()
+    )
+
+    weight = daily[0].get("weight") if daily else None
+    tweet_text = build_tweet_text(selected_date, weight, meals, exercises, soreness)
+
+    existing = safe_rows(
+        supabase.table("tweet_logs").select("id").eq("log_date", selected_date).limit(1).execute()
+    )
+
+    row = {
+        "log_date": selected_date,
+        "tweet_text": tweet_text,
+        "updated_at": datetime.utcnow().isoformat()
+    }
+
+    if existing:
+        supabase.table("tweet_logs").update(row).eq("id", existing[0]["id"]).execute()
+    else:
+        supabase.table("tweet_logs").insert(row).execute()
+
+    return jsonify({"tweet_text": tweet_text, "count": len(tweet_text)})
+
+
+@app.post("/api/tweet/save")
+def save_tweet():
+    ensure_db()
+    payload = request.get_json(force=True)
+    selected_date = payload["date"]
+    tweet_text = (payload.get("tweet_text") or "").strip()
+
+    if len(tweet_text) > 140:
+        return jsonify({"error": "140文字を超えています。"}), 400
+
+    existing = safe_rows(
+        supabase.table("tweet_logs").select("id").eq("log_date", selected_date).limit(1).execute()
+    )
+
+    row = {
+        "log_date": selected_date,
+        "tweet_text": tweet_text,
+        "updated_at": datetime.utcnow().isoformat()
+    }
+
+    if existing:
+        supabase.table("tweet_logs").update(row).eq("id", existing[0]["id"]).execute()
+    else:
+        supabase.table("tweet_logs").insert(row).execute()
+
+    return jsonify({"ok": True, "count": len(tweet_text)})
+
+
+@app.get("/api/tweets")
+def list_tweets():
+    ensure_db()
+    rows = safe_rows(
+        supabase.table("tweet_logs")
+        .select("log_date,tweet_text,updated_at")
+        .order("log_date", desc=True)
+        .limit(90)
+        .execute()
+    )
+    return jsonify(rows)
 
 
 @app.get("/api/history")
